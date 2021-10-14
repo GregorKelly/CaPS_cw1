@@ -16,7 +16,7 @@ int main()
     std::srand(static_cast<unsigned int>(std::time(NULL)));
 
     // example folder to load images
-    constexpr char* image_folder = "D:/photos_newest/jpg";
+    constexpr char* image_folder = "C:/Users/Gregor/Desktop/CaPS_cw1/test_images";
     std::vector<std::string> imageFilenames;
     for (auto& p : fs::directory_iterator(image_folder))
         imageFilenames.push_back(p.path().u8string());
