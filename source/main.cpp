@@ -11,12 +11,15 @@
 
 namespace fs = std::filesystem;
 
+
+
+
 int main()
 {
     std::srand(static_cast<unsigned int>(std::time(NULL)));
 
     // example folder to load images
-    constexpr char* image_folder = "../unsorted";//"C:/Users/Gregor/Desktop/CaPS_cw1/test_images";
+    constexpr char* image_folder = "../unsorted"; //"C:/Users/Gregor/Desktop/CaPS_cw1/test_images";
     std::vector<std::string> imageFilenames;
     for (auto& p : fs::directory_iterator(image_folder))
         imageFilenames.push_back(p.path().u8string());
@@ -38,7 +41,7 @@ int main()
     if (!texture.loadFromFile(imageFilenames[imageIndex]))
         return EXIT_FAILURE;
     sf::Sprite sprite (texture);
-    // I'm being lazy here and playing safe, as input images can be huge. You can do it better! To fit the screen well
+    // Center sprite so that the sprite is in the middle of the window
     sprite.setScale(sf::Vector2f(1.0f,1.0f));    
     sprite.setPosition(sf::Vector2f(0, (gameHeight / 2) - (sprite.getGlobalBounds().height / 2)));
 
