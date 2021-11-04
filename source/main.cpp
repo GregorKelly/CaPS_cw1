@@ -16,24 +16,23 @@ using namespace std;
 namespace fs = std::filesystem;
 
 
-
-void returnHueValue(vector<double> &rgb, float Hue) {
-    double hue;
+void returnHueValue(sf::Color &rgb, float Hue) {
+    
+    vector pixelRGB = {rgb.r, rgb.g, rgb.b};
+    float hue;
     double sat;
     double maxVal;
     double minVal;
-
-    maxVal = *max_element(rgb.begin(), rgb.end());
-    minVal = *min_element(rgb.begin(), rgb.end());
+    
+    maxVal = *max_element(pixelRGB.begin(), pixelRGB.end());
+    minVal = *min_element(pixelRGB.begin(), pixelRGB.end());
 
     double difference = maxVal - minVal;
 
-
-
     double red, green, blue;
-    red = rgb.at(0);
-    green = rgb.at(1);
-    blue = rgb.at(2);
+    red = rgb.r;
+    green = rgb.g;
+    blue = rgb.b;
 
     if (difference == 0) {
         hue = 0;
@@ -48,8 +47,7 @@ void returnHueValue(vector<double> &rgb, float Hue) {
         hue = fmod(((60 * ((red - green) / difference)) + 240), 360.0);
     }
 
-    Hue = (hue);
-        
+    Hue = hue;
 }
 
 void sort() {
@@ -64,7 +62,7 @@ int main()
 
     // example folder to load images
     constexpr char* image_folder = "../unsorted"; //"C:/Users/Gregor/Desktop/CaPS_cw1/test_images";
-    std::vector<std::string> imageFilenames;    
+    std::vector<std::string> imageFilenames;
     vector<pair<float, string>> image;
     //load images and save file names
     for (auto& p : fs::directory_iterator(image_folder)) {
@@ -135,53 +133,38 @@ int main()
                     sprite.setPosition(sf::Vector2f(0, (gameHeight / 2) - (sprite.getGlobalBounds().height / 2)));
                 }
             }
-
-            // get rgb values from image
-            double red, green, blue;
+            
             // go through the image to get rgb for each pixel in it
             // for every image in the file
-            for (int p = 0; p < imageFilenames.size(); p++) {
+            for (int p = 0; p < imageFilenames.size(); p++) 
+            {
                 sf::Texture imageTex;
                 imageTex.loadFromFile(image[p].second);
                 int px = imageTex.getSize().x;
                 int py = imageTex.getSize().y;
-                int imageSize = px * py;
-                    //for every pixel in the image
-                    for (int i = 0; i < px; i++) {
-                        for (int j = 0; i < py; j++) {
-                            // calculate the hue of the pixel
-                            
-                            returnHueValue(imageTex)
+                int imageSize = px * py;                
+                auto imagePixels = imageTex.copyToImage();
+                float imageHue = image[p].first;
+                vector<float> pixelHues;
 
-                        }
-                        //add all hue values up and divide by the number of pixels in image to get median hue of image
+                //for every pixel in the image
+                for (int i = 0; i < px; i++) 
+                {
+                    for (int j = 0; i < py; j++) 
+                    {
+                        // calculate the hue of the pixel
+                        float tempHue = 0;
+                        sf::Color currentPixel = imagePixels.getPixel(i, j);  
+                        returnHueValue(currentPixel, tempHue);
+                        pixelHues.push_back(tempHue);
                     }
-                // sort the images by hue value (cold to hot)
-                /* if image hue is less than current image*/
+                }
+                //add all hue values up and divide by the number of pixels in image to get median hue of image
+                size_t size = pixelHues.size();
+                std::sort(pixelHues.begin(), pixelHues.end());
+                image[p].first = pixelHues[size / 2];
             }
-            
-           
-            
-            //calculates hue value for a pixel
-            
-            cin >> red >> green >> blue;
-            vector<double> rgb;
-            rgb.push_back(red / 255.0);
-            rgb.push_back(green / 255.0);
-            rgb.push_back(blue / 255.0);
-            double hsv[3];
-
-            cout << "The RGB Values are " << endl;
-            for (int i = 0; i < rgb.size(); i++)
-                cout << rgb.at(i) * 255.0 << ' ';
-            cout << endl;
-            returnHSVvalues(rgb, hsv);
-            cout << "The HSV Values are " << endl;
-            for (int i = 0; i < 3; i++)
-                cout << hsv[i] << " ";
-
-
-
+            std::sort(image.begin(), image.end());
         }
 
         // Clear the window
