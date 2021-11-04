@@ -15,14 +15,19 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+struct ImageFileNameAndHue
+{   
+    float hue;
+    string fileName;     
+};
 
-void returnHueValue(sf::Color &rgb, float Hue) {
+float ReturnHueValue(sf::Color &rgb, float Hue) {
     
     vector pixelRGB = {rgb.r, rgb.g, rgb.b};
     float hue;
-    double sat;
-    double maxVal;
-    double minVal;
+    //double sat;
+    float maxVal;
+    float minVal;
     
     maxVal = *max_element(pixelRGB.begin(), pixelRGB.end());
     minVal = *min_element(pixelRGB.begin(), pixelRGB.end());
@@ -47,13 +52,14 @@ void returnHueValue(sf::Color &rgb, float Hue) {
         hue = fmod(((60 * ((red - green) / difference)) + 240), 360.0);
     }
 
-    Hue = hue;
+    return hue;
 }
 
-void sort() {
-
-
+bool CompareHue(ImageFileNameAndHue a, ImageFileNameAndHue b)
+{
+    return a.hue < b.hue;
 }
+
 
 
 int main()
@@ -62,14 +68,19 @@ int main()
 
     // example folder to load images
     constexpr char* image_folder = "../unsorted"; //"C:/Users/Gregor/Desktop/CaPS_cw1/test_images";
-    std::vector<std::string> imageFilenames;
-    vector<pair<float, string>> image;
+    //std::vector<std::string> imageFilenames;
+    vector<ImageFileNameAndHue> imageList;
+    
+
     //load images and save file names
-    for (auto& p : fs::directory_iterator(image_folder)) {
-        imageFilenames.push_back(p.path().u8string());
-        //save image as pair with meadian hue
-        image.push_back(pair(1000.0f, p.path().u8string()));
-    }   
+    for (auto& p : fs::directory_iterator(image_folder))
+    {
+        ImageFileNameAndHue imageData;
+        imageData.fileName = p.path().u8string();
+        imageData.hue = 1000.0f;
+        imageList.push_back(imageData); //and add file name and hue
+    }
+    
 
     // Define some constants
     const float pi = 3.14159f;
@@ -85,12 +96,49 @@ int main()
 
     // Load an image to begin with
     sf::Texture texture;
-    if (!texture.loadFromFile(imageFilenames[imageIndex]))
+    if (!texture.loadFromFile(imageList[imageIndex].fileName))
         return EXIT_FAILURE;
     sf::Sprite sprite (texture);
     // Center sprite so that the sprite is in the middle of the window
     sprite.setScale(sf::Vector2f(1.0f,1.0f));    
     sprite.setPosition(sf::Vector2f(0, (gameHeight / 2) - (sprite.getGlobalBounds().height / 2)));
+
+    // go through the image to get rgb for each pixel in it
+            // for every image in the file
+    for (int p = 0; p < imageList.size(); p++)
+    {
+        sf::Texture imageTex;
+        imageTex.loadFromFile(imageList[p].fileName);
+        int px = imageTex.getSize().x;
+        int py = imageTex.getSize().y;
+        int imageSize = px * py;
+        auto imagePixels = imageTex.copyToImage();
+        float imageHue = imageList[p].hue;
+        vector<float> pixelHues;
+        cout << "Image " << p << " has started sorting" << endl;
+
+        //for every pixel in the image
+        for (int i = 0; i < px; i++)
+        {
+            for (int j = 0; j < py; j++)
+            {
+                // calculate the hue of the pixel
+                float tempHue = 0;
+                sf::Color currentPixel = imagePixels.getPixel(i, j);
+                pixelHues.push_back(ReturnHueValue(currentPixel, tempHue));
+            }
+        }
+        //add all hue values up and divide by the number of pixels in image to get median hue of image
+        size_t size = pixelHues.size();
+        std::sort(pixelHues.begin(), pixelHues.end());
+        imageList[p].hue = pixelHues[size / 2];
+        cout << "Image " << p << " sorted, median hue = " << imageList[p].hue << endl;
+    }
+    std::sort(imageList.begin(), imageList.end(), CompareHue);
+    for (int i = 0; i < imageList.size(); i++)
+    {
+        cout << imageList[i].hue << " " << imageList[i].fileName << endl;
+    }
     
 
     sf::Clock clock;
@@ -122,49 +170,17 @@ int main()
             {
                 // adjust the image index
                 if (event.key.code == sf::Keyboard::Key::Left)
-                    imageIndex = (imageIndex + imageFilenames.size() - 1) % imageFilenames.size();
+                    imageIndex = (imageIndex + imageList.size() - 1) % imageList.size();
                 else if (event.key.code == sf::Keyboard::Key::Right)
-                    imageIndex = (imageIndex + 1) % imageFilenames.size();
+                    imageIndex = (imageIndex + 1) % imageList.size();
                 // ... and load the appropriate texture, and put it in the sprite
-                if (texture.loadFromFile(imageFilenames[imageIndex]))
+                if (texture.loadFromFile(imageList[imageIndex].fileName))
                 {
                     sprite = sf::Sprite(texture);
                     sprite.setScale(sf::Vector2f(1.0f, 1.0f));
                     sprite.setPosition(sf::Vector2f(0, (gameHeight / 2) - (sprite.getGlobalBounds().height / 2)));
                 }
-            }
-            
-            // go through the image to get rgb for each pixel in it
-            // for every image in the file
-            for (int p = 0; p < imageFilenames.size(); p++) 
-            {
-                sf::Texture imageTex;
-                imageTex.loadFromFile(image[p].second);
-                int px = imageTex.getSize().x;
-                int py = imageTex.getSize().y;
-                int imageSize = px * py;                
-                auto imagePixels = imageTex.copyToImage();
-                float imageHue = image[p].first;
-                vector<float> pixelHues;
-
-                //for every pixel in the image
-                for (int i = 0; i < px; i++) 
-                {
-                    for (int j = 0; i < py; j++) 
-                    {
-                        // calculate the hue of the pixel
-                        float tempHue = 0;
-                        sf::Color currentPixel = imagePixels.getPixel(i, j);  
-                        returnHueValue(currentPixel, tempHue);
-                        pixelHues.push_back(tempHue);
-                    }
-                }
-                //add all hue values up and divide by the number of pixels in image to get median hue of image
-                size_t size = pixelHues.size();
-                std::sort(pixelHues.begin(), pixelHues.end());
-                image[p].first = pixelHues[size / 2];
-            }
-            std::sort(image.begin(), image.end());
+            }       
         }
 
         // Clear the window
